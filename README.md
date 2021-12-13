@@ -24,7 +24,8 @@ npx cap sync
 * [`disconnectAll()`](#disconnectall)
 * [`write(...)`](#write)
 * [`isEnabled()`](#isenabled)
-* [`enable()`](#enable)
+* [`enableAdapter()`](#enableadapter)
+* [`disableAdapter()`](#disableadapter)
 * [`showBluetoothSettings()`](#showbluetoothsettings)
 * [`startDiscovery(...)`](#startdiscovery)
 * [`cancelDiscovery()`](#canceldiscovery)
@@ -195,10 +196,22 @@ True if device has bluetooth enabled, false otherwise
 --------------------
 
 
-### enable()
+### enableAdapter()
 
 ```typescript
-enable() => Promise<void>
+enableAdapter() => Promise<void>
+```
+
+Prompt the user to enable bluetooth.
+Resolved if bluetooth is enabled, rejects otherwise.
+
+--------------------
+
+
+### disableAdapter()
+
+```typescript
+disableAdapter() => Promise<void>
 ```
 
 Prompt the user to enable bluetooth.

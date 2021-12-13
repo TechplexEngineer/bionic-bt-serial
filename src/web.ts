@@ -31,6 +31,7 @@ export class BluetoothSerialWeb
     adapterName = "default adapter name";
     mIsListening = false;
     connections: {[key: string]: BTDevice} = {};
+    adapterEnabled = false;
 
     async getBondedDevices(): Promise<{ devices: BTDevice[] }> {
       return new Promise((resolve, _)=>{
@@ -112,11 +113,18 @@ export class BluetoothSerialWeb
 
     async isEnabled(): Promise<{result:boolean}> {
       return new Promise((resolve,_)=>{
-        resolve({result: true})
+        resolve({result: this.adapterEnabled})
       })
     }
 
-    async enable(): Promise<void> {
+    async enableAdapter(): Promise<void> {
+      this.adapterEnabled = true;
+      return new Promise((resolve,_)=>{
+        resolve()
+      })
+    }
+    async disableAdapter(): Promise<void> {
+      this.adapterEnabled = false;
       return new Promise((resolve,_)=>{
         resolve()
       })

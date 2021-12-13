@@ -231,7 +231,7 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void enable(PluginCall call){
+    public void enableAdapter(PluginCall call){
         Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
         startActivityForResult(call, intent, "enableBluetoothResult");
     }
@@ -247,6 +247,25 @@ public class BluetoothSerialPlugin extends Plugin {
             return;
         }
         call.reject("User declined to enable bluetooth");
+    }
+
+    @PluginMethod
+    public void disableAdapter(PluginCall call){
+        Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISABLE);
+        startActivityForResult(call, intent, "disableBluetoothResult");
+    }
+
+    @ActivityCallback
+    private void disableBluetoothResult(PluginCall call, ActivityResult result) {
+        if (call == null) {
+            return;
+        }
+
+        if (Activity.RESULT_OK == result.getResultCode()) {
+            call.resolve();
+            return;
+        }
+        call.reject("User declined to disable bluetooth");
     }
 
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)

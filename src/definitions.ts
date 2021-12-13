@@ -72,7 +72,13 @@ export interface BluetoothSerialPlugin {
    * Prompt the user to enable bluetooth.
    * Resolved if bluetooth is enabled, rejects otherwise.
    */
-  enable(): Promise<void>;
+  enableAdapter(): Promise<void>;
+
+  /**
+   * Prompt the user to enable bluetooth.
+   * Resolved if bluetooth is enabled, rejects otherwise.
+   */
+  disableAdapter(): Promise<void>;
 
   /**
    * Open the bluetooth settings screen for the user.
