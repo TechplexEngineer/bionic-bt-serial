@@ -388,6 +388,15 @@ public class BluetoothSerial {
     // Helpers
     // ========================================================================
 
+    public boolean disconnect(String macAddress) {
+        ConnectedThread c = connections.get(macAddress);
+        if (c != null) {
+            c.cancel();
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Stop all threads
      */
@@ -424,6 +433,10 @@ public class BluetoothSerial {
      */
     public Set<BluetoothDevice> getBondedDevices() {
         return mAdapter.getBondedDevices();
+    }
+
+     public Set<String> getConnectedDevices() {
+        return connections.keySet();
     }
 
 }

@@ -112,7 +112,7 @@ public class BluetoothSerialPlugin extends Plugin {
     private JSObject deviceToJSON(BluetoothDevice device) {
         JSObject json = new JSObject();
         json.put("name", device.getName());
-        json.put("address", device.getAddress());
+        json.put("macAddress", device.getAddress());
         json.put("id", device.getAddress());
         if (device.getBluetoothClass() != null) {
             json.put("class", device.getBluetoothClass().getDeviceClass());
@@ -184,11 +184,30 @@ public class BluetoothSerialPlugin extends Plugin {
         call.resolve(res);
     }
 
+    @PluginMethod
+    public void getConnectedDevices(PluginCall call){
+        JSObject res = new JSObject();
+        res.put("result", implementation.getConnectedDevices());
+        call.resolve(res);
+    }
+
+    @PluginMethod
+    public void disconnect(PluginCall call) {
+        String macAddress = call.getString("macAddress");
+        if (macAddress == null) {
+            call.reject("mac address is required");
+            return;
+        }
+        JSObject ret = new JSObject();
+        ret.put("result", implementation.disconnect(macAddress));
+        call.resolve(ret);
+    }
+
     /**
      * Disconnect from connected peer
      */
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
-    public void disconnect(PluginCall call){
+    public void disconnectAll(PluginCall call){
         implementation.stop();
         call.resolve();
     }

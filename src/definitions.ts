@@ -1,5 +1,5 @@
 
-export type BTDevice = {name:string, address:string, id:string, class:number}
+export type BTDevice = {name:string, macAddress:string, id:string, class:number}
 
 export type ListenCallback = (message: { connected:BTDevice }, err?: any) => void;
 export type DiscoveryCallback = (message: { device:BTDevice }, err?:any) => void;
@@ -11,7 +11,7 @@ export interface BluetoothSerialPlugin {
   /**
    * Gets a list of the bonded (paired) devices.
    */
-  getBondedDevices(): Promise<{ devices: BTDevice[] } | string>;
+  getBondedDevices(): Promise<{ devices: BTDevice[] }>;
 
   /**
    * Start listening for incomming connections
@@ -41,9 +41,19 @@ export interface BluetoothSerialPlugin {
   isConnected(options: { macAddress:string }): Promise<{ result: boolean}>;
 
   /**
+   * Gets a list of the connected devices.
+   */
+  getConnectedDevices(): Promise<{ devices: string[] }>;
+
+  /**
+   * Disconnects specified connection.
+   */
+  disconnect(options: { macAddress:string }): Promise<{ result: boolean}>;
+
+  /**
    * Disconnects all connections (incomming and outgoing).
    */
-  disconnect(): Promise<void>;
+  disconnectAll(): Promise<void>;
 
   /**
    * Write data to specified macAddress

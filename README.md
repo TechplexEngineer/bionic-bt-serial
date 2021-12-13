@@ -19,7 +19,9 @@ npx cap sync
 * [`isListening()`](#islistening)
 * [`connect(...)`](#connect)
 * [`isConnected(...)`](#isconnected)
-* [`disconnect()`](#disconnect)
+* [`getConnectedDevices()`](#getconnecteddevices)
+* [`disconnect(...)`](#disconnect)
+* [`disconnectAll()`](#disconnectall)
 * [`write(...)`](#write)
 * [`isEnabled()`](#isenabled)
 * [`enable()`](#enable)
@@ -39,12 +41,12 @@ npx cap sync
 ### getBondedDevices()
 
 ```typescript
-getBondedDevices() => Promise<{ devices: BTDevice[]; } | string>
+getBondedDevices() => Promise<{ devices: BTDevice[]; }>
 ```
 
 Gets a list of the bonded (paired) devices.
 
-**Returns:** <code>Promise&lt;string | { devices: BTDevice[]; }&gt;</code>
+**Returns:** <code>Promise&lt;{ devices: BTDevice[]; }&gt;</code>
 
 --------------------
 
@@ -122,10 +124,40 @@ True if there is an active connection to the provided macAddress false otherwise
 --------------------
 
 
-### disconnect()
+### getConnectedDevices()
 
 ```typescript
-disconnect() => Promise<void>
+getConnectedDevices() => Promise<{ devices: string[]; }>
+```
+
+Gets a list of the connected devices.
+
+**Returns:** <code>Promise&lt;{ devices: string[]; }&gt;</code>
+
+--------------------
+
+
+### disconnect(...)
+
+```typescript
+disconnect(options: { macAddress: string; }) => Promise<{ result: boolean; }>
+```
+
+Disconnects specified connection.
+
+| Param         | Type                                 |
+| ------------- | ------------------------------------ |
+| **`options`** | <code>{ macAddress: string; }</code> |
+
+**Returns:** <code>Promise&lt;{ result: boolean; }&gt;</code>
+
+--------------------
+
+
+### disconnectAll()
+
+```typescript
+disconnectAll() => Promise<void>
 ```
 
 Disconnects all connections (incomming and outgoing).
@@ -262,7 +294,7 @@ Default durationSec is 120 is not provided. Max is 300 seconds.
 
 #### BTDevice
 
-<code>{name:string, address:string, id:string, class:number}</code>
+<code>{name:string, macAddress:string, id:string, class:number}</code>
 
 
 #### ListenCallback
