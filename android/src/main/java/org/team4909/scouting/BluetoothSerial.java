@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -35,9 +34,10 @@ public class BluetoothSerial {
     private static final boolean D = true;
 
     // Message types sent from the BluetoothSerial to the Handler
-    public static final int MESSAGE_CONNECTED_TO_DEVICE_NAME = 4;
-    public static final int MESSAGE_Event = 5;
-    public static final int MESSAGE_READ_RAW = 6;
+    public static final int MESSAGE_CONNECTED_TO_DEVICE = 0;
+    public static final int MESSAGE_CONNECTION_FAILED = 1;
+    public static final int MESSAGE_CONNECTION_LOST = 2;
+    public static final int MESSAGE_READ_RAW = 3;
 
     // Name for the SDP record when creating server socket
     private static final String SDP_NAME = "BionicScoutSecure";
@@ -236,7 +236,7 @@ public class BluetoothSerial {
                 Log.e(TAG, "Couldn't establish a Bluetooth connection.");
 
                 // Send a failure message back to the Activity
-                mHandler.obtainMessage(BluetoothSerial.MESSAGE_Event, "Unable to connect to device").sendToTarget();
+                mHandler.obtainMessage(BluetoothSerial.MESSAGE_CONNECTION_FAILED, "Unable to connect to device").sendToTarget();
 
                 // Start the service over to restart listening mode
                 BluetoothSerial.this.startListening();
@@ -278,7 +278,7 @@ public class BluetoothSerial {
         connectedThread.start();
         connections.put(device.getAddress(), connectedThread);
 
-        mHandler.obtainMessage(MESSAGE_CONNECTED_TO_DEVICE_NAME, device.getName()).sendToTarget();
+        mHandler.obtainMessage(MESSAGE_CONNECTED_TO_DEVICE, device).sendToTarget();
     }
 
     // ========================================================================
@@ -291,12 +291,15 @@ public class BluetoothSerial {
      *
      * @param out The bytes to write
      * @see ConnectedThread#write(byte[])
+     * @return true on success, false otherwise
      */
-    public void write(String address, byte[] out) {
+    public boolean write(String address, byte[] out) {
         ConnectedThread r = connections.get(address);
         if (r != null) {
             r.write(out);
+            return true;
         }
+        return false;
     }
 
     /**
@@ -350,7 +353,7 @@ public class BluetoothSerial {
                     Log.e(TAG, "disconnected", e);
 
                     // Send a failure message back to the Activity
-                    mHandler.obtainMessage(BluetoothSerial.MESSAGE_Event, "Device connection was lost").sendToTarget();
+                    mHandler.obtainMessage(BluetoothSerial.MESSAGE_CONNECTION_LOST, "Device connection was lost").sendToTarget();
 
                     // Start the service over to restart listening mode
                     BluetoothSerial.this.startListening();

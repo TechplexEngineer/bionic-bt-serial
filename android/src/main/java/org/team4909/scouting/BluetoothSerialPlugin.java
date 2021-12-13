@@ -5,7 +5,10 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
@@ -26,6 +29,7 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
 
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 @CapacitorPlugin(
@@ -41,7 +45,8 @@ public class BluetoothSerialPlugin extends Plugin {
 
     // Debugging
     private static final String TAG = "BluetoothSerialPlugin";
-    private static final boolean D = true;
+
+    private PluginCall mListenCallback = null;
 
     // The Handler that gets information back from the BluetoothSerialService
     // Original code used handler for the because it was talking to the UI.
@@ -58,27 +63,38 @@ public class BluetoothSerialPlugin extends Plugin {
                      ret.put("bytes", msg.obj);
                      notifyListeners("data", ret);
                     break;
-                case BluetoothSerial.MESSAGE_CONNECTED_TO_DEVICE_NAME:
-                    String address = (String)msg.obj;
-                    Log.i(TAG, "connected to " + address);
-                    ret.put("address", address);
-                    notifyListeners("connected", ret);
+                case BluetoothSerial.MESSAGE_CONNECTED_TO_DEVICE:
+                    BluetoothDevice device = (BluetoothDevice)msg.obj;
+                    Log.i(TAG, "connected to " + device.getAddress());
+
+                    notifyListeners("connected", deviceToJSON(device));
+                    if (mListenCallback != null) {
+                        ret = new JSObject();
+                        ret.put("connected", deviceToJSON(device));
+                        mListenCallback.resolve(ret);
+                    }
                     break;
-                case BluetoothSerial.MESSAGE_Event:
+                case BluetoothSerial.MESSAGE_CONNECTION_FAILED:
                     String msgStr = (String)msg.obj;
                     Log.i(TAG, "Event message " + msgStr);
-//                    BluetoothSerial.notifyConnectionLost(message);
+
+                    notifyListeners("connectionFailed", ret);
+                    break;
+                case BluetoothSerial.MESSAGE_CONNECTION_LOST:
+                    String msgLost = (String)msg.obj;
+                    Log.i(TAG, "Event message " + msgLost);
+
+                    notifyListeners("connectionLost", ret);
                     break;
              }
          }
     };
 
-    private BluetoothSerial implementation = new BluetoothSerial(mHandler);
+    private final BluetoothSerial implementation = new BluetoothSerial(mHandler);
 
     /**
      * Get a list of paired devices
      * {devices: {name:string, id:string, address:string, class?:number}[]}
-     * @param call
      */
     @PluginMethod
     public void getBondedDevices(PluginCall call) {
@@ -105,30 +121,35 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     /**
-     * Start listening for incomming connections
-     * @param call
+     * Start listening for incoming connections
      */
-    @PluginMethod(returnType = PluginMethod.RETURN_NONE)
-    public void listen(PluginCall call){
-        //@todo need callback?
+    @PluginMethod(returnType = PluginMethod.RETURN_CALLBACK)
+    public void startListening(PluginCall call){
+        mListenCallback = call;
+        mListenCallback.setKeepAlive(true);
         implementation.startListening();
-        call.resolve();
     }
 
     /**
      * Stop listening for incoming connections
-     * @param call
      */
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
-    public void stopListen(PluginCall call){
+    public void stopListening(PluginCall call){
+        bridge.releaseCall(mListenCallback);
+        mListenCallback = null;
         implementation.stop();
         call.resolve();
     }
 
+    @PluginMethod
+    public void isListening(PluginCall call){
+        JSObject ret = new JSObject();
+        ret.put("result", implementation.isListening());
+        call.resolve(ret);
+    }
 
     /**
      * Connect to the specified macAddress
-     * @param call
      */
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     public void connect(PluginCall call){
@@ -148,13 +169,12 @@ public class BluetoothSerialPlugin extends Plugin {
 
     /**
      * Promise results in true if device is connected
-     * @param call
      */
     @PluginMethod
     public void isConnected(PluginCall call){
-        String address = call.getString("address");
+        String address = call.getString("macAddress");
         if (address == null) {
-            call.reject("address is required");
+            call.reject("macAddress is required");
             return;
         }
         JSObject res = new JSObject();
@@ -164,13 +184,23 @@ public class BluetoothSerialPlugin extends Plugin {
 
     /**
      * Disconnect from connected peer
-     * @param call
      */
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     public void disconnect(PluginCall call){
         implementation.stop();
         call.resolve();
     }
+
+    @PluginMethod(returnType = PluginMethod.RETURN_NONE)
+    public void write(PluginCall call){
+        String macAddress = call.getString("macAddress");
+        byte[] data = call.getObject("data").toString().getBytes(StandardCharsets.UTF_8);
+
+        JSObject ret = new JSObject();
+        ret.put("result", implementation.write(macAddress, data));
+        call.resolve(ret);
+    }
+
 
     @PluginMethod
     public void isEnabled(PluginCall call){
@@ -198,68 +228,68 @@ public class BluetoothSerialPlugin extends Plugin {
         call.reject("User declined to enable bluetooth");
     }
 
-
-
-    @PluginMethod
+    @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     public void showBluetoothSettings(PluginCall call){
         Intent intent = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
         getActivity().startActivity(intent);
         call.resolve();
     }
 
-    @PluginMethod //@todo make this take a callback
+    /**
+     * Discovery lasts for about 12 seconds.
+     */
+    @PluginMethod(returnType = PluginMethod.RETURN_CALLBACK)
     public void startDiscovery(PluginCall call){
         if (getPermissionState("ACCESS_COARSE_LOCATION") != PermissionState.GRANTED) {
             requestPermissionForAlias("ACCESS_COARSE_LOCATION", call, "discoveryPermsCallback");
             return;
         }
+
+        call.setKeepAlive(true);
         discoverDevices(call);
     }
     @PermissionCallback
     private void discoveryPermsCallback(PluginCall call) {
-        if (getPermissionState("camera") == PermissionState.GRANTED) {
+        if (getPermissionState("ACCESS_COARSE_LOCATION") == PermissionState.GRANTED) {
             discoverDevices(call);
         } else {
             call.reject("Permission is required to start discovery");
         }
     }
     private void discoverDevices(PluginCall call) {
+        JSObject ret = new JSObject();
+                    ret.put("starting", true);
+                    notifyListeners("discovery", ret);
 
-        call.reject("Not Implemented");
+        final BroadcastReceiver discoverReceiver = new BroadcastReceiver() {
 
-//        final CallbackContext ddc = deviceDiscoveredCallback;
-//
-//        final BroadcastReceiver discoverReceiver = new BroadcastReceiver() {
-//
-//            private JSONArray unpairedDevices = new JSONArray();
-//
-//            public void onReceive(Context context, Intent intent) {
-//                String action = intent.getAction();
-//                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-//                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//                    try {
-//                    	JSONObject o = deviceToJSON(device);
-//                        unpairedDevices.put(o);
-//                        if (ddc != null) {
-//                            PluginResult res = new PluginResult(PluginResult.Status.OK, o);
-//                            res.setKeepCallback(true);
-//                            ddc.sendPluginResult(res);
-//                        }
-//                    } catch (JSONException e) {
-//                        // This shouldn't happen, log and ignore
-//                        Log.e(TAG, "Problem converting device to JSON", e);
-//                    }
-//                } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-//                    callbackContext.success(unpairedDevices);
-//                    cordova.getActivity().unregisterReceiver(this);
-//                }
-//            }
-//        };
-//
-//        Activity activity = cordova.getActivity();
-//        activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
-//        activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
-//        bluetoothAdapter.startDiscovery();
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+
+                    if (call != null) {
+                        JSObject ret = new JSObject();
+                        JSObject dev = deviceToJSON(device);
+                        ret.put("device", dev);
+                        call.resolve(ret);
+
+                        ret.put("device", dev);
+                        notifyListeners("discovery", ret);
+                    }
+
+                } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                    JSObject ret = new JSObject();
+                    ret.put("completed", true);
+                    notifyListeners("discovery", ret);
+                }
+            }
+        };
+
+        Activity activity = getActivity();
+        activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+        activity.registerReceiver(discoverReceiver, new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED));
+        BluetoothAdapter.getDefaultAdapter().startDiscovery();
     }
 
     @PluginMethod
@@ -270,7 +300,6 @@ public class BluetoothSerialPlugin extends Plugin {
 
     /**
      * Change the name of this device
-     * @param call
      */
     @PluginMethod
     public void setName(PluginCall call){
@@ -290,7 +319,7 @@ public class BluetoothSerialPlugin extends Plugin {
     public void setDiscoverable(PluginCall call){
         Integer discoverableDuration = 120;
         try {
-            discoverableDuration = call.getInt("duration", 120);
+            discoverableDuration = call.getInt("durationSec", 120);
         } catch(Exception e) {
             Log.d(TAG, "using default duration "+discoverableDuration);
         }
@@ -299,8 +328,4 @@ public class BluetoothSerialPlugin extends Plugin {
         getActivity().startActivity(discoverIntent);
         call.resolve();
     }
-
-
-
-
 }
