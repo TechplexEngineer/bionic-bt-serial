@@ -60,7 +60,6 @@ public class BluetoothSerial {
      * @param handler  A Handler to send messages back to the UI Activity
      */
     public BluetoothSerial(Handler handler) {
-        isListening.set(false);
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         mHandler = handler;
         connections = new ConcurrentHashMap<>();
