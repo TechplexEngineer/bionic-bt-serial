@@ -135,7 +135,9 @@ public class BluetoothSerialPlugin extends Plugin {
      */
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     public void stopListening(PluginCall call){
-        bridge.releaseCall(mListenCallback);
+        if (mListenCallback != null) {
+            bridge.releaseCall(mListenCallback);
+        }
         mListenCallback = null;
         implementation.stop();
         call.resolve();
