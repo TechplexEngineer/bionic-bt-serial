@@ -201,7 +201,7 @@ public class BluetoothSerial {
      * succeeds or fails.
      */
     private class ConnectThread extends Thread {
-        private final BluetoothSocket mmSocket;
+        private  BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
 
         public ConnectThread(BluetoothDevice device) {
@@ -218,7 +218,7 @@ public class BluetoothSerial {
         }
 
         public void run() {
-            Log.i(TAG, "BEGIN mConnectThread Socket");
+            Log.i(TAG, "BEGIN mConnectThread Socket " + mmDevice.getAddress() + " (" + mmDevice.getName() + ")");
             setName("ConnectThread");
 
             // Always cancel discovery because it will slow down a connection
@@ -234,11 +234,8 @@ public class BluetoothSerial {
                 Log.e(TAG, e.toString());
                 Log.e(TAG, "Couldn't establish a Bluetooth connection.");
 
-                // Send a failure message back to the Activity
+                // Send a failure message back
                 mHandler.obtainMessage(BluetoothSerial.MESSAGE_CONNECTION_FAILED, "Unable to connect to device").sendToTarget();
-
-                // Start the service over to restart listening mode
-                BluetoothSerial.this.startListening();
                 return;
             }
 
