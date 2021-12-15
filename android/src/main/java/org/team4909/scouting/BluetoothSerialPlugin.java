@@ -29,8 +29,12 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 
 
-import java.nio.charset.StandardCharsets;
+import org.json.JSONException;
+
+import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @CapacitorPlugin(
         name = "BluetoothSerial",
@@ -56,36 +60,39 @@ public class BluetoothSerialPlugin extends Plugin {
 
          public void handleMessage(Message msg) {
 
-             JSObject ret = new JSObject();
-
              switch (msg.what) {
-                 case BluetoothSerial.MESSAGE_READ_RAW:
+                 case BluetoothSerial.MESSAGE_READ_RAW: {
+                     JSObject ret = new JSObject();
                      ret.put("bytes", msg.obj);
-                     notifyListeners("data", ret);
-                    break;
-                case BluetoothSerial.MESSAGE_CONNECTED_TO_DEVICE:
-                    BluetoothDevice device = (BluetoothDevice)msg.obj;
+                     notifyListeners("rawData", ret);
+                     break;
+                 }
+                case BluetoothSerial.MESSAGE_CONNECTED_TO_DEVICE: {
+                    BluetoothDevice device = (BluetoothDevice) msg.obj;
                     Log.i(TAG, "connected to " + device.getAddress());
 
                     notifyListeners("connected", deviceToJSON(device));
                     if (mListenCallback != null) {
-                        ret = new JSObject();
-                        ret.put("connected", deviceToJSON(device));
-                        mListenCallback.resolve(ret);
+                        mListenCallback.resolve(deviceToJSON(device));
                     }
                     break;
-                case BluetoothSerial.MESSAGE_CONNECTION_FAILED:
-                    String msgStr = (String)msg.obj;
-                    Log.i(TAG, "Event message " + msgStr);
+                }
+                case BluetoothSerial.MESSAGE_CONNECTION_FAILED: {
+                    BluetoothDevice device = (BluetoothDevice) msg.obj;
 
-                    notifyListeners("connectionFailed", ret);
-                    break;
-                case BluetoothSerial.MESSAGE_CONNECTION_LOST:
-                    String msgLost = (String)msg.obj;
-                    Log.i(TAG, "Event message " + msgLost);
+                    notifyListeners("connectionFailed", deviceToJSON(device));
 
-                    notifyListeners("connectionLost", ret);
+                    Log.i(TAG, "Connection Failed " + device.getAddress());
                     break;
+                }
+                case BluetoothSerial.MESSAGE_CONNECTION_LOST: {
+                    BluetoothDevice device = (BluetoothDevice) msg.obj;
+
+                    notifyListeners("connectionLost", deviceToJSON(device));
+
+                    Log.i(TAG, "Connection Lost " +  device.getAddress());
+                    break;
+                }
              }
          }
     };
@@ -94,7 +101,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     /**
      * Get a list of paired devices
-     * {devices: {name:string, id:string, address:string, class?:number}[]}
+     * @result  { result: {name:string, address:string, class?:number}[] }
      */
     @PluginMethod
     public void getBondedDevices(PluginCall call) {
@@ -106,14 +113,13 @@ public class BluetoothSerialPlugin extends Plugin {
             deviceList.put(deviceToJSON(device));
         }
 
-        ret.put("devices", deviceList);
+        ret.put("result", deviceList);
         call.resolve(ret);
     }
     private JSObject deviceToJSON(BluetoothDevice device) {
         JSObject json = new JSObject();
         json.put("name", device.getName());
         json.put("macAddress", device.getAddress());
-        json.put("id", device.getAddress());
         if (device.getBluetoothClass() != null) {
             json.put("class", device.getBluetoothClass().getDeviceClass());
         }
@@ -122,6 +128,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     /**
      * Start listening for incoming connections
+     * @input (null, callback: ListenCallback)
      */
     @PluginMethod(returnType = PluginMethod.RETURN_CALLBACK)
     public void startListening(PluginCall call){
@@ -139,10 +146,14 @@ public class BluetoothSerialPlugin extends Plugin {
             bridge.releaseCall(mListenCallback);
         }
         mListenCallback = null;
-        implementation.stop();
+        implementation.disconnectAll();
         call.resolve();
     }
 
+    /**
+     * Check if the listening thread is running
+     * @result {result:boolean}
+     */
     @PluginMethod
     public void isListening(PluginCall call){
         JSObject ret = new JSObject();
@@ -152,6 +163,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     /**
      * Connect to the specified macAddress
+     * @input (options:{ macAddress:string })
      */
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     public void connect(PluginCall call){
@@ -171,6 +183,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     /**
      * Promise results in true if device is connected
+     * @result {result: boolean}
      */
     @PluginMethod
     public void isConnected(PluginCall call){
@@ -184,13 +197,35 @@ public class BluetoothSerialPlugin extends Plugin {
         call.resolve(res);
     }
 
+    /**
+     * Get a list of connected bluetooth devices
+     * @result { result: {name:string, address:string, class?:number}[] }
+     */
     @PluginMethod
     public void getConnectedDevices(PluginCall call){
         JSObject res = new JSObject();
-        res.put("result", implementation.getConnectedDevices());
+        JSArray devices = new JSArray();
+
+        Set<BluetoothDevice> paired = implementation.getBondedDevices();
+        Set<String> connected = implementation.getConnectedDevices();
+        for (String macAddress : connected) {
+            for (BluetoothDevice dev : paired) {
+                if (dev.getAddress().equals(macAddress)) {
+                    devices.put(deviceToJSON(dev));
+                    break; // found the one we need, can skip the rest of the inner loop
+                }
+            }
+        }
+
+        res.put("result", devices);
         call.resolve(res);
     }
 
+    /**
+     * Disconnect from the paired device
+     * @input (options: { macAddress:string })
+     * @result  { result: boolean }
+     */
     @PluginMethod
     public void disconnect(PluginCall call) {
         String macAddress = call.getString("macAddress");
@@ -204,25 +239,92 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     /**
-     * Disconnect from connected peer
+     * Disconnect from all connected devices
      */
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     public void disconnectAll(PluginCall call){
-        implementation.stop();
+        implementation.disconnectAll();
         call.resolve();
     }
 
+    public boolean isMACValid(String mac) {
+        // If the string is empty
+        // return false
+        if (mac == null) {
+            return false;
+        }
+
+        String regex = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})|([0-9a-fA-F]{4}\\.[0-9a-fA-F]{4}\\.[0-9a-fA-F]{4})$";
+        Pattern p = Pattern.compile(regex);
+
+        Matcher m = p.matcher(mac);
+        return m.matches();
+    }
+
+    /**
+     * Disconnect from the paired device
+     * @input (options: { macAddress:string, data:UInt8Array })
+     * @result  { result:boolean }
+     */
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     public void write(PluginCall call){
         String macAddress = call.getString("macAddress");
-        byte[] data = call.getObject("data").toString().getBytes(StandardCharsets.UTF_8);
+        if (!isMACValid(macAddress)) {
+            call.reject("macAddress is required");
+            return;
+        }
 
-        JSObject ret = new JSObject();
-        ret.put("result", implementation.write(macAddress, data));
-        call.resolve(ret);
+        JSArray data = call.getArray("data");
+        if (data.length() < 1) {
+            call.reject("array of data is required");
+            return;
+        }
+
+        try {
+            // idea from: https://stackoverflow.com/a/3176237/429544
+            List<Byte> byteList = data.toList();
+            Byte[] byteArr = byteList.toArray(new Byte[0]);
+            byte[] toWrite = toPrimitive(byteArr);
+
+            JSObject ret = new JSObject();
+            ret.put("result", implementation.write(macAddress, toWrite));
+            call.resolve(ret);
+        } catch (JSONException e) {
+            call.reject("array of data is required");
+        }
+    }
+
+    /**
+     * Converts an array of object Bytes to primitives.
+     * <p>
+     * This method returns {@code null} for a {@code null} input array.
+     * </p>
+     *
+     * @param array  a {@code Byte} array, may be {@code null}
+     * @return a {@code byte} array, {@code null} if null array input
+     * @throws NullPointerException if an array element is {@code null}
+     * @src https://github.com/apache/commons-lang/blob/ecf744f6c6be31efe892b6d4c57ad9f39bf280a8/src/main/java/org/apache/commons/lang3/ArrayUtils.java#L9305-L9327
+     */
+    public static byte[] toPrimitive(final Byte[] array) {
+        final byte[] EMPTY_BYTE_ARRAY = {};
+        if (array == null) {
+            return null;
+        }
+        if (array.length == 0) {
+            return EMPTY_BYTE_ARRAY;
+        }
+        final byte[] result = new byte[array.length];
+        for (int i = 0; i < array.length; i++) {
+            result[i] = array[i].byteValue();
+        }
+        return result;
     }
 
 
+    /**
+     * Check if the bluetooth adapter is enabled
+     * @result { result:boolean }
+     */
     @PluginMethod
     public void isEnabled(PluginCall call){
         JSObject res = new JSObject();
@@ -230,6 +332,9 @@ public class BluetoothSerialPlugin extends Plugin {
         call.resolve(res);
     }
 
+    /**
+     * Request that the user enable the bluetooth adapter if its not already enabled
+     */
     @PluginMethod
     public void enableAdapter(PluginCall call){
         Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -249,11 +354,18 @@ public class BluetoothSerialPlugin extends Plugin {
         call.reject("User declined to enable bluetooth");
     }
 
+    /**
+     * Disable the bluetooth adapter. Does not promt the user.
+     */
     @PluginMethod
     public void disableAdapter(PluginCall call){
         BluetoothAdapter.getDefaultAdapter().disable();
+        call.resolve();
     }
 
+    /**
+     * Show the Bluetooth settings menu for the user.
+     */
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     public void showBluetoothSettings(PluginCall call){
         Intent intent = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
@@ -263,6 +375,7 @@ public class BluetoothSerialPlugin extends Plugin {
 
     /**
      * Discovery lasts for about 12 seconds.
+     * @input (null, callback: DiscoveryCallback
      */
     @PluginMethod(returnType = PluginMethod.RETURN_CALLBACK)
     public void startDiscovery(PluginCall call){
@@ -285,7 +398,7 @@ public class BluetoothSerialPlugin extends Plugin {
     private void discoverDevices(PluginCall call) {
         JSObject ret = new JSObject();
                     ret.put("starting", true);
-                    notifyListeners("discovery", ret);
+                    notifyListeners("discoveryState", ret);
 
         final BroadcastReceiver discoverReceiver = new BroadcastReceiver() {
 
@@ -295,19 +408,15 @@ public class BluetoothSerialPlugin extends Plugin {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
                     if (call != null) {
-                        JSObject ret = new JSObject();
                         JSObject dev = deviceToJSON(device);
-                        ret.put("device", dev);
-                        call.resolve(ret);
-
-                        ret.put("device", dev);
-                        notifyListeners("discovery", ret);
+                        notifyListeners("discovered", dev);
+                        call.resolve(dev);
                     }
 
                 } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                     JSObject ret = new JSObject();
                     ret.put("completed", true);
-                    notifyListeners("discovery", ret);
+                    notifyListeners("discoveryState", ret);
                 }
             }
         };
@@ -318,6 +427,9 @@ public class BluetoothSerialPlugin extends Plugin {
         BluetoothAdapter.getDefaultAdapter().startDiscovery();
     }
 
+    /**
+     * Stops any running discovery process.
+     */
     @PluginMethod
     public void cancelDiscovery(PluginCall call){
         BluetoothAdapter.getDefaultAdapter().cancelDiscovery();
@@ -325,22 +437,35 @@ public class BluetoothSerialPlugin extends Plugin {
     }
 
     /**
-     * Change the name of this device
+     * Sets the name of the bluetooth adapter. Name is what paired devices will see when they connect.
+     * @input {name: string}
      */
     @PluginMethod
     public void setName(PluginCall call){
         String newName = call.getString("name");
+        if (newName == null || newName.length() < 1) {
+            call.reject("name is required");
+            return;
+        }
         BluetoothAdapter.getDefaultAdapter().setName(newName);
         call.resolve();
     }
 
+    /**
+     * Gets the name of the bluetooth adapter.
+     * @result { result:string }
+     */
     @PluginMethod
     public void getName(PluginCall call){
         JSObject ret = new JSObject();
-        ret.put("name", BluetoothAdapter.getDefaultAdapter().getName());
+        ret.put("result", BluetoothAdapter.getDefaultAdapter().getName());
         call.resolve(ret);
     }
 
+    /**
+     * Ensure bluetooth is enabled and the device is discoverable to remote scanners.
+     * Default durationSec is 120 is not provided. Max is 300 seconds.
+     */
     @PluginMethod
     public void setDiscoverable(PluginCall call){
         Integer discoverableDuration = 120;

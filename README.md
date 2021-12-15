@@ -13,6 +13,13 @@ npx cap sync
 
 <docgen-index>
 
+* [`addListener(PluginEvents, ...)`](#addlistenerpluginevents)
+* [`addListener('discoveryState', ...)`](#addlistenerdiscoverystate)
+* [`addListener('discovered', ...)`](#addlistenerdiscovered)
+* [`addListener('rawData', ...)`](#addlistenerrawdata)
+* [`addListener('connected', ...)`](#addlistenerconnected)
+* [`addListener('connectionFailed', ...)`](#addlistenerconnectionfailed)
+* [`addListener('connectionLost', ...)`](#addlistenerconnectionlost)
 * [`getBondedDevices()`](#getbondeddevices)
 * [`startListening(...)`](#startlistening)
 * [`stopListening()`](#stoplistening)
@@ -32,22 +39,136 @@ npx cap sync
 * [`setName(...)`](#setname)
 * [`getName()`](#getname)
 * [`setDiscoverable(...)`](#setdiscoverable)
+* [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
+* [Enums](#enums)
 
 </docgen-index>
 
 <docgen-api>
 <!--Update the source file JSDoc comments and rerun docgen to update the docs below-->
 
+### addListener(PluginEvents, ...)
+
+```typescript
+addListener(eventName: PluginEvents, callback: EventCallback) => Promise<PluginListenerHandle>
+```
+
+| Param           | Type                                                    |
+| --------------- | ------------------------------------------------------- |
+| **`eventName`** | <code><a href="#pluginevents">PluginEvents</a></code>   |
+| **`callback`**  | <code><a href="#eventcallback">EventCallback</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### addListener('discoveryState', ...)
+
+```typescript
+addListener(eventName: 'discoveryState', callback: (result: { starting?: boolean; completed?: boolean; }) => void) => Promise<PluginListenerHandle>
+```
+
+| Param           | Type                                                                           |
+| --------------- | ------------------------------------------------------------------------------ |
+| **`eventName`** | <code>'discoveryState'</code>                                                  |
+| **`callback`**  | <code>(result: { starting?: boolean; completed?: boolean; }) =&gt; void</code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### addListener('discovered', ...)
+
+```typescript
+addListener(eventName: 'discovered', callback: (result: BTDevice) => void) => Promise<PluginListenerHandle>
+```
+
+| Param           | Type                                                               |
+| --------------- | ------------------------------------------------------------------ |
+| **`eventName`** | <code>'discovered'</code>                                          |
+| **`callback`**  | <code>(result: <a href="#btdevice">BTDevice</a>) =&gt; void</code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### addListener('rawData', ...)
+
+```typescript
+addListener(eventName: 'rawData', callback: (result: { bytes: ArrayBufferLike; }) => void) => Promise<PluginListenerHandle>
+```
+
+| Param           | Type                                                                                         |
+| --------------- | -------------------------------------------------------------------------------------------- |
+| **`eventName`** | <code>'rawData'</code>                                                                       |
+| **`callback`**  | <code>(result: { bytes: <a href="#arraybufferlike">ArrayBufferLike</a>; }) =&gt; void</code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### addListener('connected', ...)
+
+```typescript
+addListener(eventName: 'connected', callback: (result: BTDevice) => void) => Promise<PluginListenerHandle>
+```
+
+| Param           | Type                                                               |
+| --------------- | ------------------------------------------------------------------ |
+| **`eventName`** | <code>'connected'</code>                                           |
+| **`callback`**  | <code>(result: <a href="#btdevice">BTDevice</a>) =&gt; void</code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### addListener('connectionFailed', ...)
+
+```typescript
+addListener(eventName: 'connectionFailed', callback: (result: BTDevice) => void) => Promise<PluginListenerHandle>
+```
+
+| Param           | Type                                                               |
+| --------------- | ------------------------------------------------------------------ |
+| **`eventName`** | <code>'connectionFailed'</code>                                    |
+| **`callback`**  | <code>(result: <a href="#btdevice">BTDevice</a>) =&gt; void</code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
+### addListener('connectionLost', ...)
+
+```typescript
+addListener(eventName: 'connectionLost', callback: (result: BTDevice) => void) => Promise<PluginListenerHandle>
+```
+
+| Param           | Type                                                               |
+| --------------- | ------------------------------------------------------------------ |
+| **`eventName`** | <code>'connectionLost'</code>                                      |
+| **`callback`**  | <code>(result: <a href="#btdevice">BTDevice</a>) =&gt; void</code> |
+
+**Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
+
+--------------------
+
+
 ### getBondedDevices()
 
 ```typescript
-getBondedDevices() => Promise<{ devices: BTDevice[]; }>
+getBondedDevices() => Promise<{ result: BTDevice[]; }>
 ```
 
 Gets a list of the bonded (paired) devices.
 
-**Returns:** <code>Promise&lt;{ devices: BTDevice[]; }&gt;</code>
+**Returns:** <code>Promise&lt;{ result: BTDevice[]; }&gt;</code>
 
 --------------------
 
@@ -55,13 +176,14 @@ Gets a list of the bonded (paired) devices.
 ### startListening(...)
 
 ```typescript
-startListening(callback: ListenCallback) => Promise<void>
+startListening(_options: {}, callback: ListenCallback) => Promise<void>
 ```
 
 Start listening for incomming connections
 
 | Param          | Type                                                      |
 | -------------- | --------------------------------------------------------- |
+| **`_options`** | <code>{}</code>                                           |
 | **`callback`** | <code><a href="#listencallback">ListenCallback</a></code> |
 
 --------------------
@@ -128,12 +250,12 @@ True if there is an active connection to the provided macAddress false otherwise
 ### getConnectedDevices()
 
 ```typescript
-getConnectedDevices() => Promise<{ devices: string[]; }>
+getConnectedDevices() => Promise<{ result: BTDevice[]; }>
 ```
 
 Gets a list of the connected devices.
 
-**Returns:** <code>Promise&lt;{ devices: string[]; }&gt;</code>
+**Returns:** <code>Promise&lt;{ result: BTDevice[]; }&gt;</code>
 
 --------------------
 
@@ -169,14 +291,14 @@ Disconnects all connections (incomming and outgoing).
 ### write(...)
 
 ```typescript
-write(options: { macAddress: string; data: object; }) => Promise<{ result: boolean; }>
+write(options: { macAddress: string; data: ArrayBufferLike; }) => Promise<{ result: boolean; }>
 ```
 
 Write data to specified macAddress
 
-| Param         | Type                                               | Description |
-| ------------- | -------------------------------------------------- | ----------- |
-| **`options`** | <code>{ macAddress: string; data: object; }</code> | The options |
+| Param         | Type                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| **`options`** | <code>{ macAddress: string; data: <a href="#arraybufferlike">ArrayBufferLike</a>; }</code> |
 
 **Returns:** <code>Promise&lt;{ result: boolean; }&gt;</code>
 
@@ -234,7 +356,7 @@ Open the bluetooth settings screen for the user.
 ### startDiscovery(...)
 
 ```typescript
-startDiscovery(callback: DiscoveryCallback) => Promise<void>
+startDiscovery(_options: {}, callback: DiscoveryCallback) => Promise<void>
 ```
 
 Starts discovery process, sends info about found devices to the callback.
@@ -242,6 +364,7 @@ Scans for about 12 seconds.
 
 | Param          | Type                                                            |
 | -------------- | --------------------------------------------------------------- |
+| **`_options`** | <code>{}</code>                                                 |
 | **`callback`** | <code><a href="#discoverycallback">DiscoveryCallback</a></code> |
 
 --------------------
@@ -264,7 +387,7 @@ Stops any running discovery process.
 setName(options: { name: string; }) => Promise<void>
 ```
 
-Sets the nameov the bluetooth adapter. Name is what paired devices will see when they connect.
+Sets the name of the bluetooth adapter. Name is what paired devices will see when they connect.
 
 | Param         | Type                           |
 | ------------- | ------------------------------ |
@@ -276,12 +399,12 @@ Sets the nameov the bluetooth adapter. Name is what paired devices will see when
 ### getName()
 
 ```typescript
-getName() => Promise<{ name: string; }>
+getName() => Promise<{ result: string; }>
 ```
 
 Gets the name of the bluetooth adapter.
 
-**Returns:** <code>Promise&lt;{ name: string; }&gt;</code>
+**Returns:** <code>Promise&lt;{ result: string; }&gt;</code>
 
 --------------------
 
@@ -302,21 +425,81 @@ Default durationSec is 120 is not provided. Max is 300 seconds.
 --------------------
 
 
+### Interfaces
+
+
+#### PluginListenerHandle
+
+| Prop         | Type                                      |
+| ------------ | ----------------------------------------- |
+| **`remove`** | <code>() =&gt; Promise&lt;void&gt;</code> |
+
+
+#### ArrayBufferTypes
+
+Allowed <a href="#arraybuffer">ArrayBuffer</a> types for the buffer of an ArrayBufferView and related Typed Arrays.
+
+| Prop              | Type                                                |
+| ----------------- | --------------------------------------------------- |
+| **`ArrayBuffer`** | <code><a href="#arraybuffer">ArrayBuffer</a></code> |
+
+
+#### ArrayBuffer
+
+Represents a raw buffer of binary data, which is used to store data for the
+different typed arrays. ArrayBuffers cannot be read from or written to directly,
+but can be passed to a typed array or DataView Object to interpret the raw
+buffer as needed.
+
+| Prop             | Type                | Description                                                                     |
+| ---------------- | ------------------- | ------------------------------------------------------------------------------- |
+| **`byteLength`** | <code>number</code> | Read-only. The length of the <a href="#arraybuffer">ArrayBuffer</a> (in bytes). |
+
+| Method    | Signature                                                                               | Description                                                     |
+| --------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| **slice** | (begin: number, end?: number \| undefined) =&gt; <a href="#arraybuffer">ArrayBuffer</a> | Returns a section of an <a href="#arraybuffer">ArrayBuffer</a>. |
+
+
 ### Type Aliases
+
+
+#### EventCallback
+
+<code>(info: any, err?: any): void</code>
 
 
 #### BTDevice
 
-<code>{name:string, macAddress:string, id:string, class:number}</code>
+<code>{name:string, macAddress:string, class:number}</code>
+
+
+#### ArrayBufferLike
+
+<code>ArrayBufferTypes[keyof ArrayBufferTypes]</code>
 
 
 #### ListenCallback
 
-<code>(message: { connected: <a href="#btdevice">BTDevice</a>; }, err?: any): void</code>
+<code>(device: <a href="#btdevice">BTDevice</a>, err?: any): void</code>
 
 
 #### DiscoveryCallback
 
-<code>(message: { device: <a href="#btdevice">BTDevice</a>; }, err?: any): void</code>
+<code>(device: <a href="#btdevice">BTDevice</a>, err?: any): void</code>
+
+
+### Enums
+
+
+#### PluginEvents
+
+| Members                | Value                           |
+| ---------------------- | ------------------------------- |
+| **`discovered`**       | <code>"discovered"</code>       |
+| **`discoveryState`**   | <code>"discoveryState"</code>   |
+| **`rawData`**          | <code>"rawData"</code>          |
+| **`connected`**        | <code>"connected"</code>        |
+| **`connectionFailed`** | <code>"connectionFailed"</code> |
+| **`connectionLost`**   | <code>"connectionLost"</code>   |
 
 </docgen-api>

@@ -1,22 +1,47 @@
 
-export type BTDevice = {name:string, macAddress:string, id:string, class:number}
+export type BTDevice = {name:string, macAddress:string, class:number}
 
-export type ListenCallback = (message: { connected:BTDevice }, err?: any) => void;
-export type DiscoveryCallback = (message: { device:BTDevice }, err?:any) => void;
+export type ListenCallback = (device:BTDevice, err?: any) => void;
+export type DiscoveryCallback = (device:BTDevice, err?:any) => void;
+
+export interface PluginListenerHandle {
+  /**
+   * Removes the callback, further events will not trigger the callback.
+   */
+  remove(): Promise<void>;
+}
+
+export enum PluginEvents {
+  discovered       = "discovered",
+  discoveryState   = "discoveryState",
+  rawData          = "rawData",
+  connected        = "connected",
+  connectionFailed = "connectionFailed",
+  connectionLost   = "connectionLost",
+}
+export type EventCallback = (info:any, err?:any) => void;
 
 
 export interface BluetoothSerialPlugin {
 
 
+  addListener(eventName:PluginEvents, callback:EventCallback): Promise<PluginListenerHandle>;
+  addListener(eventName:'discoveryState', callback:(result:{starting?:boolean, completed?:boolean})=> void): Promise<PluginListenerHandle>;
+  addListener(eventName:'discovered', callback:(result:BTDevice)=> void): Promise<PluginListenerHandle>;
+  addListener(eventName:'rawData', callback:(result:{bytes:ArrayBufferLike})=> void): Promise<PluginListenerHandle>;
+  addListener(eventName:'connected', callback:(result:BTDevice)=> void): Promise<PluginListenerHandle>;
+  addListener(eventName:'connectionFailed', callback:(result:BTDevice)=> void): Promise<PluginListenerHandle>;
+  addListener(eventName:'connectionLost', callback:(result:BTDevice)=> void): Promise<PluginListenerHandle>;
+
   /**
    * Gets a list of the bonded (paired) devices.
    */
-  getBondedDevices(): Promise<{ devices: BTDevice[] }>;
+  getBondedDevices(): Promise<{ result: BTDevice[] }>;
 
   /**
    * Start listening for incomming connections
    */
-  startListening(callback: ListenCallback): Promise<void>;
+  startListening(_options:{}, callback: ListenCallback): Promise<void>;
 
   /**
    * Stops listening for incomming connections.
@@ -43,7 +68,7 @@ export interface BluetoothSerialPlugin {
   /**
    * Gets a list of the connected devices.
    */
-  getConnectedDevices(): Promise<{ devices: string[] }>;
+  getConnectedDevices(): Promise<{ result: BTDevice[] }>;
 
   /**
    * Disconnects specified connection.
@@ -57,11 +82,8 @@ export interface BluetoothSerialPlugin {
 
   /**
    * Write data to specified macAddress
-   *
-   * @param      {{macAddress:string, data:object}}  options  The options
-   * @return     {Promise}                          True if data successfully written
    */
-  write(options: {macAddress:string, data:object}): Promise<{ result: boolean}>;
+  write(options: {macAddress:string, data:ArrayBufferLike}): Promise<{ result: boolean}>;
 
   /**
    * True if device has bluetooth enabled, false otherwise
@@ -89,7 +111,7 @@ export interface BluetoothSerialPlugin {
    * Starts discovery process, sends info about found devices to the callback.
    * Scans for about 12 seconds.
    */
-  startDiscovery(callback: DiscoveryCallback): Promise<void>;
+  startDiscovery(_options:{}, callback: DiscoveryCallback): Promise<void>;
 
   /**
    * Stops any running discovery process.
@@ -97,14 +119,14 @@ export interface BluetoothSerialPlugin {
   cancelDiscovery(): Promise<void>;
 
   /**
-   * Sets the nameov the bluetooth adapter. Name is what paired devices will see when they connect.
+   * Sets the name of the bluetooth adapter. Name is what paired devices will see when they connect.
    */
   setName(options: {name: string}): Promise<void>;
 
   /**
    * Gets the name of the bluetooth adapter.
    */
-  getName(): Promise<{name: string}>;
+  getName(): Promise<{result: string}>;
 
   /**
    * Ensure bluetooth is enabled and the device is discoverable to remote scanners.

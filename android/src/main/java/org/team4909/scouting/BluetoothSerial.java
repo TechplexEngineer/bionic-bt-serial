@@ -3,6 +3,7 @@ package org.team4909.scouting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -235,7 +236,7 @@ public class BluetoothSerial {
                 Log.e(TAG, "Couldn't establish a Bluetooth connection.");
 
                 // Send a failure message back
-                mHandler.obtainMessage(BluetoothSerial.MESSAGE_CONNECTION_FAILED, "Unable to connect to device").sendToTarget();
+                mHandler.obtainMessage(BluetoothSerial.MESSAGE_CONNECTION_FAILED, mmDevice).sendToTarget();
                 return;
             }
 
@@ -329,7 +330,7 @@ public class BluetoothSerial {
 
         public void run() {
             Log.i(TAG, "BEGIN mConnectedThread");
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[4096]; // @todo this will cause messages to be fragmented :(
             int bytesRead;
 
             // Keep listening to the InputStream while connected
@@ -342,17 +343,15 @@ public class BluetoothSerial {
                     // We make a copy because the full array can have extra data at the end
                     // when / if we read less than its size.
                     if (bytesRead > 0) {
-                        mHandler.obtainMessage(BluetoothSerial.MESSAGE_READ_RAW, buffer).sendToTarget();
+                        byte[] rawData = Arrays.copyOf(buffer, bytesRead);
+                        mHandler.obtainMessage(BluetoothSerial.MESSAGE_READ_RAW, rawData).sendToTarget();
                     }
 
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
 
-                    // Send a failure message back to the Activity
-                    mHandler.obtainMessage(BluetoothSerial.MESSAGE_CONNECTION_LOST, "Device connection was lost").sendToTarget();
-
-                    // Start the service over to restart listening mode
-                    BluetoothSerial.this.startListening();
+                    // Send a failure message back
+                    mHandler.obtainMessage(BluetoothSerial.MESSAGE_CONNECTION_LOST, mmSocket.getRemoteDevice()).sendToTarget();
                     break;
                 }
             }
@@ -397,11 +396,9 @@ public class BluetoothSerial {
     /**
      * Stop all threads
      */
-    public synchronized void stop() {
-        if (D) Log.d(TAG, "stop");
+    public synchronized void disconnectAll() {
+        if (D) Log.d(TAG, "disconnectAll");
 
-        // stop accepting new connections
-        stopListening();
 
         // cancel any in progress connections
         if (mConnectThread != null) {
@@ -431,6 +428,7 @@ public class BluetoothSerial {
     public Set<BluetoothDevice> getBondedDevices() {
         return mAdapter.getBondedDevices();
     }
+    // unpair: https://stackoverflow.com/a/11147911/429544
 
      public Set<String> getConnectedDevices() {
         return connections.keySet();

@@ -17,7 +17,6 @@ function getMockDevice(): BTDevice {
   return {
     "name":`DeviceName ${getRandomInt(1, 10)}`,
     "macAddress":"AA:BB:CC:DD:EE:FF",
-    "id":"AA:BB:CC:DD:EE:FF",
     "class":524
   };
 }
@@ -33,18 +32,18 @@ export class BluetoothSerialWeb
     connections: {[key: string]: BTDevice} = {};
     adapterEnabled = false;
 
-    async getBondedDevices(): Promise<{ devices: BTDevice[] }> {
+    async getBondedDevices(): Promise<{ result: BTDevice[] }> {
       return new Promise((resolve, _)=>{
-        resolve({devices: [getMockDevice(), getMockDevice()]})
+        resolve({result: [getMockDevice(), getMockDevice()]})
       });
     }
 
-    async startListening(callback: ListenCallback): Promise<void> {
+    async startListening(_options:{}, callback: ListenCallback): Promise<void> {
       this.mIsListening = true;
       this.listeningHandle = setInterval(()=>{
         let dev = getMockDevice()
         this.connections[dev.macAddress] = dev;
-        callback({connected: dev})
+        callback(dev)
       }, 2000)
 
       return new Promise((resolve,_)=>{
@@ -73,7 +72,6 @@ export class BluetoothSerialWeb
       this.connections[options.macAddress] = {
         name: options.macAddress,
         macAddress: options.macAddress,
-        id: options.macAddress,
         "class": 524
       };
       return new Promise((resolve,_)=>{
@@ -87,25 +85,29 @@ export class BluetoothSerialWeb
       })
     }
 
-    async getConnectedDevices(): Promise<{ devices: string[] }> {
+    async getConnectedDevices(): Promise<{ result: BTDevice[] }> {
       return new Promise((resolve,_)=>{
-        resolve({devices: Object.keys(this.connections)});
+        resolve({result: Object.values(this.connections)});
       })
     }
 
-    async disconnect(_options: { macAddress:string }): Promise<{ result: boolean}> {
+    async disconnect(options: { macAddress:string }): Promise<{ result: boolean}> {
+      delete this.connections[options.macAddress];
       return new Promise((resolve,_)=>{
         resolve({result: true})
       })
     }
 
     async disconnectAll(): Promise<void> {
+      for (let macAddress in this.connections) {
+        delete this.connections[macAddress];
+      }
       return new Promise((resolve,_)=>{
         resolve()
       })
     }
 
-    async write(_options: {macAddress:string, data:object}): Promise<{ result: boolean}> {
+    async write(_options: {macAddress:string, data:ArrayBufferLike}): Promise<{ result: boolean}> {
       return new Promise((resolve,_)=>{
         resolve({result: true})
       })
@@ -136,9 +138,9 @@ export class BluetoothSerialWeb
       })
     }
 
-    async startDiscovery(callback: DiscoveryCallback): Promise<void> {
+    async startDiscovery(_options:{}, callback: DiscoveryCallback): Promise<void> {
       this.discoveryHandle = setInterval(()=>{
-        callback({device: getMockDevice()})
+        callback(getMockDevice())
       }, 2000); // get a mock device every 2 seconds
       setTimeout(this.cancelDiscovery, 12*1000); // only discover for 12 seconds
 
@@ -164,9 +166,9 @@ export class BluetoothSerialWeb
       })
     }
 
-    async getName(): Promise<{name: string}> {
+    async getName(): Promise<{result: string}> {
       return new Promise((resolve,_)=>{
-        resolve({name: this.adapterName})
+        resolve({result: this.adapterName})
       })
     }
 
