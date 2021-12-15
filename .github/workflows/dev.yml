@@ -1,0 +1,31 @@
+name: Dev Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: # branches to run builds on
+      - 'main'
+      - 'master'
+    paths-ignore:   # do not run if these are the only files that have changed
+      - README.md
+      - .gitignore
+      - catone_docker.sh
+      - git-hooks
+      - gradlew
+      - gradlew.bat
+      - docs/**
+      - docker/**
+      - .githooks/**
+      - tools/**
+
+jobs:
+  development-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check JS
+        run: |
+          npm run build
+      - name: Check Java
+        run: |
+          cd androud && ./gradlew build
