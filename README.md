@@ -179,7 +179,7 @@ Gets a list of the bonded (paired) devices.
 startListening(_options: {}, callback: ListenCallback) => Promise<void>
 ```
 
-Start listening for incomming connections
+Start listening for incoming connections
 
 | Param          | Type                                                      |
 | -------------- | --------------------------------------------------------- |
@@ -195,7 +195,7 @@ Start listening for incomming connections
 stopListening() => Promise<void>
 ```
 
-Stops listening for incomming connections.
+Stops listening for incoming connections.
 
 --------------------
 
@@ -206,7 +206,7 @@ Stops listening for incomming connections.
 isListening() => Promise<{ result: boolean; }>
 ```
 
-True if listening for an accepting incomming connections.
+True if listening for an accepting incoming connections.
 A device acting as a server should be listening.
 
 **Returns:** <code>Promise&lt;{ result: boolean; }&gt;</code>

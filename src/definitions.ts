@@ -39,17 +39,17 @@ export interface BluetoothSerialPlugin {
   getBondedDevices(): Promise<{ result: BTDevice[] }>;
 
   /**
-   * Start listening for incomming connections
+   * Start listening for incoming connections
    */
   startListening(_options:{}, callback: ListenCallback): Promise<void>;
 
   /**
-   * Stops listening for incomming connections.
+   * Stops listening for incoming connections.
    */
   stopListening(): Promise<void>;
 
   /**
-   * True if listening for an accepting incomming connections.
+   * True if listening for an accepting incoming connections.
    * A device acting as a server should be listening.
    */
   isListening(): Promise<{ result: boolean}>;

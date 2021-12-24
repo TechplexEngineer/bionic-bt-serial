@@ -74,5 +74,8 @@
     "android": {
       "src": "android"
     }
+  },
+  "dependencies": {
+    "bionic-bt-serial": "^0.0.1"
   }
 }

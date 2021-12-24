@@ -54,7 +54,7 @@ public class BluetoothSerial {
     private ConnectThread mConnectThread; // we only support attempting to make one connection at a time
 
 
-    private AtomicBoolean isListening;
+    private final AtomicBoolean isListening;
 
     /**
      * Constructor. Prepares a new BluetoothSerial session.
@@ -202,7 +202,7 @@ public class BluetoothSerial {
      * succeeds or fails.
      */
     private class ConnectThread extends Thread {
-        private  BluetoothSocket mmSocket;
+        private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
 
         public ConnectThread(BluetoothDevice device) {
