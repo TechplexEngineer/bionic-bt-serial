@@ -38,6 +38,54 @@ jobs:
         with:
           java-version: 11
 
-      - name: Check Java
+      - name: Ensure Android code builds
         run: |
           cd android && ./gradlew build
+
+      - uses: paulhatch/semantic-version@v4.0.2
+        id: vergen
+        with:
+          # The prefix to use to identify tags
+          tag_prefix: "v"
+          # A string which, if present in a git commit, indicates that a change represents a
+          # major (breaking) change, supports regular expressions wrapped with '/'
+          major_pattern: "(MAJOR)"
+          # Same as above except indicating a minor change, supports regular expressions wrapped with '/'
+          minor_pattern: "(MINOR)"
+          # A string to determine the format of the version output
+          #"${major}.${minor}.${patch}-prerelease${increment}"
+          format: "${major}.${minor}.${patch}-pre${increment}"
+          # Optional path to check for changes. If any changes are detected in the path the
+          # 'changed' output will true. Enter multiple paths separated by spaces.
+          # change_path: "src/my-service"
+          # Named version, will be used as suffix for name version tag
+          # namespace: my-service
+          # Indicate whether short tags like 'v1' should be supported. If false only full
+          # tags like 'v1.0.0' will be recognized.
+          short_tags: true
+          # If this is set to true, *every* commit will be treated as a new version.
+          bump_each_commit: false
+
+      - name: Annotate Version
+        shell: bash
+        id: version
+        run: |
+          VERSION="${{ steps.vergen.outputs.version }}"
+          if [[ ${GITHUB_REF_TYPE} == "tag" ]]; then
+            VERSION=${GITHUB_REF_NAME}
+          fi
+
+          echo "::notice title=Version::${VERSION}"
+          echo "::set-output name=version::${VERSION}"
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Set new package version ${{ steps.version.outputs.version }}
+        run: npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
