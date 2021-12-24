@@ -17,6 +17,9 @@ import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.util.Log;
 
+import com.getcapacitor.JSArray;
+import com.getcapacitor.JSObject;
+
 
 /**
  * This class does all the work for setting up and managing Bluetooth
@@ -339,12 +342,25 @@ public class BluetoothSerial {
                     // Read from the InputStream
                     bytesRead = mmInStream.read(buffer);
 
+                    Log.d(TAG, "read bytes: "+bytesRead+" from "+mmSocket.getRemoteDevice().getAddress());
+
+
                     // Send the raw bytestream to handler
                     // We make a copy because the full array can have extra data at the end
                     // when / if we read less than its size.
                     if (bytesRead > 0) {
                         byte[] rawData = Arrays.copyOf(buffer, bytesRead);
-                        mHandler.obtainMessage(BluetoothSerial.MESSAGE_READ_RAW, rawData).sendToTarget();
+
+                        JSArray bytes = new JSArray();
+                        for (byte msgByte : rawData) {
+                            bytes.put((int) msgByte);
+                        }
+
+                        JSObject ret = new JSObject();
+                        ret.put("bytes", bytes);
+                        ret.put("from", BluetoothSerialPlugin.deviceToJSON(mmSocket.getRemoteDevice()));
+
+                        mHandler.obtainMessage(BluetoothSerial.MESSAGE_READ_RAW, ret).sendToTarget();
                     }
 
                 } catch (IOException e) {
@@ -365,6 +381,7 @@ public class BluetoothSerial {
         public void write(byte[] buffer) {
             try {
                 mmOutStream.write(buffer);
+                Log.d(TAG, "write bytes: "+buffer.length+" to "+mmSocket.getRemoteDevice().getAddress());
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
             }

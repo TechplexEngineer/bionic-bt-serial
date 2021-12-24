@@ -107,7 +107,7 @@ export class BluetoothSerialWeb
       })
     }
 
-    async write(_options: {macAddress:string, data:ArrayBufferLike}): Promise<{ result: boolean}> {
+    async write(_options: {macAddress:string, data:number[]}): Promise<{ result: boolean}> {
       return new Promise((resolve,_)=>{
         resolve({result: true})
       })

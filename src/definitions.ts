@@ -21,6 +21,8 @@ export enum PluginEvents {
 }
 export type EventCallback = (info:any, err?:any) => void;
 
+export type RawDataResult = {bytes:number[], from:BTDevice};
+
 
 export interface BluetoothSerialPlugin {
 
@@ -28,7 +30,7 @@ export interface BluetoothSerialPlugin {
   addListener(eventName:PluginEvents, callback:EventCallback): Promise<PluginListenerHandle>;
   addListener(eventName:'discoveryState', callback:(result:{starting?:boolean, completed?:boolean})=> void): Promise<PluginListenerHandle>;
   addListener(eventName:'discovered', callback:(result:BTDevice)=> void): Promise<PluginListenerHandle>;
-  addListener(eventName:'rawData', callback:(result:{bytes:ArrayBufferLike})=> void): Promise<PluginListenerHandle>;
+  addListener(eventName:'rawData', callback:(result:RawDataResult)=> void): Promise<PluginListenerHandle>;
   addListener(eventName:'connected', callback:(result:BTDevice)=> void): Promise<PluginListenerHandle>;
   addListener(eventName:'connectionFailed', callback:(result:BTDevice)=> void): Promise<PluginListenerHandle>;
   addListener(eventName:'connectionLost', callback:(result:BTDevice)=> void): Promise<PluginListenerHandle>;
@@ -83,7 +85,7 @@ export interface BluetoothSerialPlugin {
   /**
    * Write data to specified macAddress
    */
-  write(options: {macAddress:string, data:ArrayBufferLike}): Promise<{ result: boolean}>;
+  write(options: {macAddress:string, data:number[]}): Promise<{ result: boolean}>;
 
   /**
    * True if device has bluetooth enabled, false otherwise

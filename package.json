@@ -1,6 +1,6 @@
 {
   "name": "bionic-bt-serial",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "Send data between bluetooth devices using a serial like interface",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",

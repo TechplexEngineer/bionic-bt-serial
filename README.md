@@ -99,13 +99,13 @@ addListener(eventName: 'discovered', callback: (result: BTDevice) => void) => Pr
 ### addListener('rawData', ...)
 
 ```typescript
-addListener(eventName: 'rawData', callback: (result: { bytes: ArrayBufferLike; }) => void) => Promise<PluginListenerHandle>
+addListener(eventName: 'rawData', callback: (result: RawDataResult) => void) => Promise<PluginListenerHandle>
 ```
 
-| Param           | Type                                                                                         |
-| --------------- | -------------------------------------------------------------------------------------------- |
-| **`eventName`** | <code>'rawData'</code>                                                                       |
-| **`callback`**  | <code>(result: { bytes: <a href="#arraybufferlike">ArrayBufferLike</a>; }) =&gt; void</code> |
+| Param           | Type                                                                         |
+| --------------- | ---------------------------------------------------------------------------- |
+| **`eventName`** | <code>'rawData'</code>                                                       |
+| **`callback`**  | <code>(result: <a href="#rawdataresult">RawDataResult</a>) =&gt; void</code> |
 
 **Returns:** <code>Promise&lt;<a href="#pluginlistenerhandle">PluginListenerHandle</a>&gt;</code>
 
@@ -291,14 +291,14 @@ Disconnects all connections (incomming and outgoing).
 ### write(...)
 
 ```typescript
-write(options: { macAddress: string; data: ArrayBufferLike; }) => Promise<{ result: boolean; }>
+write(options: { macAddress: string; data: number[]; }) => Promise<{ result: boolean; }>
 ```
 
 Write data to specified macAddress
 
-| Param         | Type                                                                                       |
-| ------------- | ------------------------------------------------------------------------------------------ |
-| **`options`** | <code>{ macAddress: string; data: <a href="#arraybufferlike">ArrayBufferLike</a>; }</code> |
+| Param         | Type                                                 |
+| ------------- | ---------------------------------------------------- |
+| **`options`** | <code>{ macAddress: string; data: number[]; }</code> |
 
 **Returns:** <code>Promise&lt;{ result: boolean; }&gt;</code>
 
@@ -435,31 +435,6 @@ Default durationSec is 120 is not provided. Max is 300 seconds.
 | **`remove`** | <code>() =&gt; Promise&lt;void&gt;</code> |
 
 
-#### ArrayBufferTypes
-
-Allowed <a href="#arraybuffer">ArrayBuffer</a> types for the buffer of an ArrayBufferView and related Typed Arrays.
-
-| Prop              | Type                                                |
-| ----------------- | --------------------------------------------------- |
-| **`ArrayBuffer`** | <code><a href="#arraybuffer">ArrayBuffer</a></code> |
-
-
-#### ArrayBuffer
-
-Represents a raw buffer of binary data, which is used to store data for the
-different typed arrays. ArrayBuffers cannot be read from or written to directly,
-but can be passed to a typed array or DataView Object to interpret the raw
-buffer as needed.
-
-| Prop             | Type                | Description                                                                     |
-| ---------------- | ------------------- | ------------------------------------------------------------------------------- |
-| **`byteLength`** | <code>number</code> | Read-only. The length of the <a href="#arraybuffer">ArrayBuffer</a> (in bytes). |
-
-| Method    | Signature                                                                               | Description                                                     |
-| --------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| **slice** | (begin: number, end?: number \| undefined) =&gt; <a href="#arraybuffer">ArrayBuffer</a> | Returns a section of an <a href="#arraybuffer">ArrayBuffer</a>. |
-
-
 ### Type Aliases
 
 
@@ -473,9 +448,9 @@ buffer as needed.
 <code>{name:string, macAddress:string, class:number}</code>
 
 
-#### ArrayBufferLike
+#### RawDataResult
 
-<code>ArrayBufferTypes[keyof ArrayBufferTypes]</code>
+<code>{bytes:number[], from:<a href="#btdevice">BTDevice</a>}</code>
 
 
 #### ListenCallback
