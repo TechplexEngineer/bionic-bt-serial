@@ -9,14 +9,8 @@ on:
     paths-ignore:   # do not run if these are the only files that have changed
       - README.md
       - .gitignore
-      - catone_docker.sh
-      - git-hooks
-      - gradlew
-      - gradlew.bat
-      - docs/**
-      - docker/**
-      - .githooks/**
-      - tools/**
+    tags:
+        - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   development-build:
