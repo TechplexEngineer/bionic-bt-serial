@@ -27,7 +27,7 @@ export class BluetoothSerialWeb
 
     discoveryHandle: ReturnType<typeof setInterval>|null = null;
     listeningHandle: ReturnType<typeof setInterval>|null = null;
-    adapterName = "default adapter name";
+    adapterName = localStorage.getItem('adapterName') || "default adapter name";
     mIsListening = false;
     connections: {[key: string]: BTDevice} = {};
     adapterEnabled = false;
@@ -161,6 +161,7 @@ export class BluetoothSerialWeb
 
     async setName(options: {name: string}): Promise<void> {
       this.adapterName = options.name;
+      localStorage.setItem('adapterName', options.name)
       return new Promise((resolve,_)=>{
         resolve()
       })
